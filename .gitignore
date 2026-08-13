@@ -1,0 +1,11 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# Editors
+*.swp
+*.swo
+*~
+
+# Claude Code local overrides (machine-specific, not meant to be shared)
+.claude/settings.local.json
