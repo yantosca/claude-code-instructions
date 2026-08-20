@@ -51,6 +51,23 @@ sphinx-build -b html -a -E source build/html --keep-going
   real docutils/Sphinx spec (e.g. `list-table` takes its caption as a
   positional argument, not a `:caption:` option — there's no such
   option).
+- The "N warnings" summary count can include docutils messages at
+  **ERROR** severity too (a malformed grid table, an unparseable
+  directive block), which won't match a naive `grep "WARNING"` over
+  captured output — if the summary count and your grep count disagree,
+  don't assume the grep is complete. Re-run with `-w <file>` (e.g.
+  `sphinx-build ... -w /tmp/sphinx_warnings.txt`) to get every
+  diagnostic in one place regardless of its severity label.
+- By default Sphinx does **not** warn on an unresolved `:func:`/`:mod:`/
+  `:class:` (or other `py:*`) cross-reference — it just renders as
+  plain unlinked text, silently. To actually catch broken object
+  references (see step 7), add `-n` (nitpicky mode) to the build
+  command; this surfaces a large amount of unrelated noise too (short
+  type-hint aliases like `xr.Dataset` in numpydoc-style docstrings that
+  napoleon turns into unresolvable `:class:` roles) unless the project
+  also configures `intersphinx_mapping` and `napoleon_type_aliases` —
+  filter the output to just the targets you're actually checking rather
+  than trying to zero out every nitpicky warning.
 
 ## 2. Check for content typos, grammar, and factual inconsistencies
 
@@ -188,6 +205,57 @@ the wrong verb) — fix the ones that block the requested change from
 being meaningful (e.g. a duplicate label makes "which one is the
 default" ambiguous), but otherwise flag-don't-fix content bugs that
 are outside what was asked, the same as any other unrelated finding.
+
+## 7. `:func:`/`:mod:`/`:class:` role consistency (Python autodoc projects)
+
+When a project cross-references its own API with Sphinx's Python
+domain roles, it's common for `:func:` to get used as a catch-all for
+every dotted name — including ones that are actually modules or
+classes, not functions. This is easy to do (the roles all *render* the
+same way, as a plain code-styled link) and easy to miss by eye, but
+Sphinx's Python domain distinguishes them internally, and picking the
+wrong one is a real inconsistency worth fixing.
+
+- **Find the candidates**: grep the docs tree for every
+  `` :func:`...` ``, `` :mod:`...` ``, `` :class:`...` `` target and
+  extract the unique dotted names. A large skew (e.g. 100+ `:func:` to
+  a handful of `:mod:`) is itself a signal that `:func:` is being used
+  as a default rather than deliberately.
+- **Classify each one against the real package**, don't guess from the
+  name: import progressively shorter prefixes of the dotted path until
+  one succeeds, then `getattr` the remaining parts, and check the
+  result with `inspect.isfunction`/`inspect.isclass`/`isinstance(obj,
+  types.ModuleType)`. A bare `mypkg.subpkg.some_script` with no
+  trailing function name is almost always a module (especially for a
+  standalone script meant to be run via `python -m`), while
+  `mypkg.subpkg.some_module.some_function` is a function.
+- **This same introspection pass surfaces genuinely broken paths for
+  free** — do this check even if you weren't asked to, since fixing
+  the role is pointless if the path doesn't resolve anyway. Real
+  examples found this way in one audit: a missing letter in a package
+  segment (`module` vs `modules`), a `/` typo'd in place of a `.`, a
+  reference to the wrong sibling module name, a wrong top-level package
+  name entirely (copy-paste from a sibling project), and a missing dot
+  merging two path segments into one. All of these fail silently in
+  non-nitpicky mode (see step 1) — only `-n` surfaces them, and even
+  then as "reference target not found" rather than anything
+  pointing at the typo directly.
+- **Apply the mechanical, always-`:mod:` fixes in bulk**: once you have
+  the confirmed list of dotted names that are modules, do one
+  script/pass per exact name (`` :func:`name` `` → `` :mod:`name` ``)
+  across every `.rst` file rather than editing occurrence by occurrence
+  — same rationale as the option-group bulk-sed approach in step 6.
+  Handle the broken-path cases and any `:class:`-not-`:func:` cases
+  (e.g. a third-party class like `xarray.DataArray` tagged `:func:`)
+  as individual targeted fixes, since each needs a different
+  replacement string.
+- **Watch for collateral damage in fixed-width content**: if a
+  correction changes the *length* of visible text inside a
+  `.. table::`/grid-table block (e.g. fixing `modules` from a
+  shorter typo adds a character), the row's `|` column no longer lines
+  up with the table's border row, which docutils reports as `ERROR:
+  Malformed table` — re-run the build (see step 1's note on `-w`) after
+  any edit inside a grid table, not just after prose edits.
 
 ## General notes
 
