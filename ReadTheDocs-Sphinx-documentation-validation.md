@@ -117,6 +117,52 @@ for f in glob.glob('**/*.rst', recursive=True):
   the behavior ever seems to contradict what's expected, since docutils
   version drift could change it.)
 
+## 6. Option-group hygiene: default first, right directive for booleans
+
+Pages that document a set of mutually-exclusive settings (CMake build
+switches, YAML config keys, CLI flags) commonly use Sphinx's
+`.. option::` directive once per accepted value, with prose noting
+which one is `"(Default option)"` / `"This is the default setting"`.
+Two recurring problems in this pattern:
+
+- **The default isn't listed first.** Readers scan top-to-bottom
+  expecting the first-listed value to be the default; when the
+  default is buried second (or later) among several choices, that
+  expectation is silently violated. Grep the whole file for `default
+  option`/`default setting`/`recommended option`/`recommended
+  setting` and, for each hit, check whether it's already the first
+  `.. option::`/`.. describe::` sibling under its heading — reorder if
+  not. Watch for settings whose default is *conditional* (e.g. `true`
+  by default for one simulation type, `false` for another, as shown in
+  a code example elsewhere on the page) — there, whichever value
+  matches the code example's default stays first; don't reorder those.
+- **Plain booleans should use `.. describe::`, not `.. option::`.**
+  `.. option::` is meant for named/CLI-style values (e.g. `fullchem`,
+  `Release`, a resolution string); a bare `y`/`n` or `true`/`false`
+  toggle is more accurately a `.. describe::` (Sphinx's generic
+  definition-list directive — no special indexing/cross-reference
+  semantics). Before converting, grep for `` :option:`y` `` /
+  `` :option:`n` `` / `` :option:`true` `` / `` :option:`false` `` (or
+  whatever the boolean tokens are) across the whole docs tree — if
+  nothing cross-references them by that role, the rename is safe.
+
+For a file with many instances of either problem, don't fix each one
+with an individual find-and-replace: first do a blanket, anchored
+`sed` pass converting every plain-boolean `.. option:: true`/`.. option::
+false` (or `y`/`n`) to `.. describe::` in one shot (safe once the
+cross-reference check above is clean, and doesn't touch line counts,
+so any line numbers you gathered beforehand stay valid) — then apply
+targeted reorder edits only to the subset of blocks where the default
+wasn't already first. This is much cheaper than hand-editing every
+occurrence individually, and reordering already-correct blocks would
+be a no-op edit anyway. While reading through each block to check
+order, you'll sometimes find an adjacent, unrelated bug (e.g. two
+sibling values both accidentally labeled `true`, or a description with
+the wrong verb) — fix the ones that block the requested change from
+being meaningful (e.g. a duplicate label makes "which one is the
+default" ambiguous), but otherwise flag-don't-fix content bugs that
+are outside what was asked, the same as any other unrelated finding.
+
 ## General notes
 
 - Prefer fixing the root cause over suppressing the warning (e.g. don't
