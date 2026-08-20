@@ -49,8 +49,9 @@ page, ask it to report only high-confidence typos, grammar errors,
 and — importantly — **internal inconsistencies spotted by reading
 closely**, e.g. a page asserting "X is not supported" while another
 page in the same site has a full section documenting X. Always verify
-each finding against the actual file before fixing (subagents
-occasionally shift line numbers or misquote).
+each finding against the actual file before fixing — see
+[Validating-documentation-against-code.md](Validating-documentation-against-code.md)
+step 8 for why (subagents occasionally shift line numbers or misquote).
 
 ## 3. Cross-check docs against the actual codebase for undocumented features
 
