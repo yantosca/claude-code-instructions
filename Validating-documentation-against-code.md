@@ -47,6 +47,18 @@ For every candidate item, grep the docs tree for it and sort into:
   — check whether anything comparable is documented at that level of
   detail elsewhere first.
 
+When the docs are generated partly by an auto-doc toolchain (Sphinx
+`autodoc`/`autosummary`, Doxygen, etc.) reflecting the project's own
+source, a new *importable* function/class with a good docstring can
+count as **Adequate** purely via that auto-generated reference, even
+with zero narrative mention — no gap to report. But a new *standalone
+script* meant to be run directly (not imported) is not adequately
+covered by auto-doc alone: a user browsing an API reference has no way
+to discover "you can also run this file directly." Check whether
+sibling standalone scripts in the same folder get a narrative
+usage page/section, and flag the new one as **Missing** if they do and
+it doesn't.
+
 ## 4. For renames/removals, grep the whole tree for the old name — in both directions
 
 When the changelog says "renamed X to Y" or "removed Z": grep the
@@ -64,6 +76,15 @@ value. Grep for how an existing, still-correct doc entry or a real
 sample config/fixture already shows the same kind of thing, and mirror
 that exact pattern/value. If no real example exists to copy, say so
 rather than filling in a guess.
+
+This cuts both ways: don't blindly copy an *existing* example either
+without checking it actually works. A docstring/doc-page example is
+itself a claim that can go stale or simply be wrong — e.g. a CLI usage
+example showing a Python list literal (`--foo ["a","b"]`) passed as a
+shell argument, which is invalid bash regardless of what the flag was
+supposed to do. If a code example is bundled with what you're fixing,
+mentally trace (or actually run) it against the real interface before
+carrying it forward.
 
 ## 6. Never fabricate a fix for something you can't verify — flag it instead
 

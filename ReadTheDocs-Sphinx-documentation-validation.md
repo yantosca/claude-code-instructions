@@ -33,6 +33,18 @@ sphinx-build -b html -a -E source build/html --keep-going
   an externally-managed environment, `pip install --user --break-system-packages
   <pkg>` is fine for a throwaway doc-build tool — it's not modifying
   the project.
+- If the docs use Sphinx `autodoc`/`autosummary` against the repo's
+  *own* Python package (an `api.rst`-style page recursively
+  autosummarizing `mypackage.*`), a generic docs-only environment will
+  fail with `ExtensionError: ... no module named mypackage` even with
+  every Sphinx package correctly pinned — `autodoc` has to actually
+  `import` the package to introspect it. Check whether the project's
+  own dev/conda environment (not just a shared docs-build env reused
+  across sibling repos) already bundles the matching Sphinx pins *and*
+  has the package installed/importable (`python -c "import mypackage"`)
+  — that combined environment is what building this kind of repo
+  needs, whereas a plain docs-only env only works for repos whose docs
+  are static `.rst`/`.md` content with no autodoc against local code.
 - Fix each warning at its root cause: extend title underlines/overlines
   to match title length, fix `:ref:` targets to the label that actually
   exists (`grep -rn "^\.\. _label:"`), fix directive options against the
