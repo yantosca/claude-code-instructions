@@ -62,7 +62,10 @@ CLI flags, config keys, functions, directives, or file formats, then
 grep the docs tree for whether each one is mentioned anywhere. Flag
 anything real in the code with no doc coverage — new features silently
 missing from user guides are a common gap that a docs-only build check
-can't surface.
+can't surface. For the fuller method (starting from the changelog,
+telling "missing" apart from "stale/wrong", handling renames, and
+verifying fixes) see
+[Validating-documentation-against-code.md](Validating-documentation-against-code.md).
 
 ## 4. Toctree hygiene: remove/fix stale entries
 
