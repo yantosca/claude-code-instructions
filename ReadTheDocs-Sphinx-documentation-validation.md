@@ -67,6 +67,19 @@ telling "missing" apart from "stale/wrong", handling renames, and
 verifying fixes) see
 [Validating-documentation-against-code.md](Validating-documentation-against-code.md).
 
+Pay special attention to **verbatim reproduced console output or
+interactive-menu text** — a sample `cmake` configure transcript, a
+script's numbered `Choose simulation type:`-style prompt copied into a
+doc page. Grepping for keyword presence won't catch these going stale,
+since the keywords (option names, menu item text) can all still exist
+elsewhere in the doc while the *specific reproduced block* silently
+drifts: a new choice added to the real script but missing from the
+transcript, choices reordered/renumbered, or (seen in practice) a
+phantom choice in the doc that was removed from the script long ago.
+Diff each such block line-by-line against the actual script's
+print/`printf` statements (or a fresh real run of the tool) rather than
+trusting that the surrounding prose is still accurate.
+
 ## 4. Toctree hygiene: remove/fix stale entries
 
 A `.rst` file's own build warnings say nothing about whether it's
