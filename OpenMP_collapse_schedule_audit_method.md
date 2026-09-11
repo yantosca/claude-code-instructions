@@ -20,12 +20,21 @@ module.
    emissions/coupling library) — the user may want only one audited now
    and the rest later, or specific subcomponents excluded entirely.
    Don't assume; ask or confirm if it's unclear which subfolders count.
-2. Get a size estimate per subdirectory before diving in:
+   An exclusion from a *prior* audit (e.g. "we excluded module X per
+   request last time") does not automatically carry forward — re-confirm
+   it explicitly for this run rather than silently inheriting it.
+2. Don't assume the directory layout matches a prior audit, even on a
+   supposedly-related branch — top-level components get reorganized
+   between branches/versions (e.g. a subsystem moving out of a shared
+   "core" directory into its own top-level folder). List the actual
+   top-level directories fresh (`ls -d */`) and re-derive scope from
+   that, rather than reusing a remembered file/directory list.
+3. Get a size estimate per subdirectory before diving in:
    `grep -rliE '!\$OMP' <dir>` for file counts, and
    `grep -rciE '!\$OMP PARALLEL' <dir>` summed per directory for a rough
    directive-count estimate. This tells you where the bulk of the work
    is and whether a single pass or parallel batches make sense.
-3. A directory showing OMP-tagged files but zero `PARALLEL` matches
+4. A directory showing OMP-tagged files but zero `PARALLEL` matches
    often means something structurally different is going on (e.g. only
    `THREADPRIVATE` declarations for solver state, with the actual
    parallel loops living elsewhere) — verify what's actually there
@@ -52,7 +61,13 @@ fast read-only search agent that isn't meant for open-ended analysis.
   missed at the boundary otherwise.
 - After all batches report, reconcile: sum "directives reviewed" across
   agents and compare to your original grep-based estimate. Chase down
-  any gap before treating the audit as complete.
+  any gap before treating the audit as complete. The most common
+  explanation for a gap is a **disabled directive** the grep estimate
+  counted but that isn't actually live OpenMP — a directive commented
+  out with an extra `!` (`!!$OMP ...`, or an indented `!    !$OMP ...`).
+  Ask each batch agent to explicitly list any such disabled directives
+  it finds in its assigned files (file:line, one-line reason) so gaps
+  reconcile cleanly instead of looking like a miscount.
 - If an agent's own sub-task grows large enough to need further
   splitting, that's fine, but make sure whatever it produces gets
   reported all the way back up — watch for a sub-agent's result arriving
@@ -104,6 +119,29 @@ matches the clause (a mismatched copy-paste can produce something that
 isn't valid OpenMP for the loop it now decorates; that's a latent bug
 worth flagging on its own, separate from any tuning recommendation).
 
+## Data-race check (independent of COLLAPSE/SCHEDULE)
+
+For every directive, also check that every variable *written* inside the
+loop body is actually safe under `DEFAULT(SHARED)` — this is a distinct
+check from loop-nest shape and surfaces real bugs at roughly the same
+rate as EXIT/accumulator hazards do:
+- A scalar or small array written inside the loop (directly, or via an
+  `INTENT(OUT)`/`INTENT(INOUT)` argument to a called subroutine) but
+  **missing from the `PRIVATE` clause** is a data race, even if every
+  thread happens to write the same value (still undefined behavior, and
+  wasteful). This is easy to miss because the write often isn't in the
+  loop nest's own executable statements — it's inside a called
+  subroutine, so you have to check what that subroutine's output
+  arguments are, not just what the loop body itself assigns.
+- A running total/counter updated via `x = x + ...` (or similar) on a
+  shared, non-reduction variable is a race that needs either
+  `REDUCTION(+:x)` or removal if the accumulated value is actually dead
+  code (check whether it's ever read after the loop — dead accumulators
+  turn up surprisingly often and are also just wasted compute).
+- Flag these prominently in "notable findings," the same as EXIT/
+  copy-paste-clause bugs — they're correctness issues independent of
+  whatever COLLAPSE/SCHEDULE verdict the directive gets.
+
 ## SCHEDULE evaluation
 
 Only recommend a change where the loop body's cost profile clearly
@@ -131,11 +169,26 @@ those are worth surfacing prominently, separate from the bulk tuning
 list, since they matter regardless of whether the user ever applies any
 of the COLLAPSE/SCHEDULE suggestions.
 
-**Why this matters:** a handful of real findings from applying this
-method (kept generic here on purpose) were an unlabeled `EXIT` inside an
+State each verdict as an unambiguous **action**, not just a confidence
+label — the user reading this report wants to know exactly what to type,
+not just how sure you are. Prefer phrasing like "ADD COLLAPSE(3)",
+"CHANGE SCHEDULE(DYNAMIC) → SCHEDULE(STATIC)", "No change — already
+COLLAPSE(2), correct", or "POSSIBLE COLLAPSE(2) but NEEDS MANUAL
+VERIFICATION — confirm `<specific thing>`" over vague language like
+"could be collapsed" or "consider revisiting the schedule." If a change
+needs a caveat or a check before applying, put the caveat in the same
+line as the action, not as separate prose the reader has to reconcile
+with the verdict themselves.
+
+**Why this matters:** real findings from applying this method (kept
+generic here on purpose) include an unlabeled `EXIT` inside an
 otherwise-clean-looking nest, a sequential accumulator on what would
-have been the innermost collapsed dimension, and a directive whose
-clauses had clearly been copied from a different loop and no longer
-matched the loop they decorated. All three would have been missed by
-pattern-matching on the directive text alone — they only surface from
-actually reading the loop body.
+have been the innermost collapsed dimension, a directive whose clauses
+had clearly been copied from a different loop and no longer matched the
+loop they decorated, and — a distinct and recurring category — a shared
+scalar written inside the loop (often via a called subroutine's output
+argument) that was missing from the `PRIVATE` clause, a genuine data
+race invisible from the directive text alone. All of these would have
+been missed by pattern-matching on the directive text alone — they only
+surface from actually reading the loop body (and, for the last one,
+checking what any called subroutines write into).

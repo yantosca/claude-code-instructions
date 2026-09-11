@@ -61,7 +61,7 @@ sphinx-build -b html -a -E source build/html --keep-going
 - By default Sphinx does **not** warn on an unresolved `:func:`/`:mod:`/
   `:class:` (or other `py:*`) cross-reference — it just renders as
   plain unlinked text, silently. To actually catch broken object
-  references (see step 7), add `-n` (nitpicky mode) to the build
+  references (see step 9), add `-n` (nitpicky mode) to the build
   command; this surfaces a large amount of unrelated noise too (short
   type-hint aliases like `xr.Dataset` in numpydoc-style docstrings that
   napoleon turns into unresolvable `:class:` roles) unless the project
@@ -69,7 +69,41 @@ sphinx-build -b html -a -E source build/html --keep-going
   filter the output to just the targets you're actually checking rather
   than trying to zero out every nitpicky warning.
 
-## 2. Check for content typos, grammar, and factual inconsistencies
+## 2. Run bulk AST sweeps over docstrings before reading any page
+
+In an autodoc project the docstrings *are* published documentation, and
+doc pages routinely say "see the API reference for the argument list".
+Three scripted diffs over the AST cost minutes, find real defects, and
+— just as valuably — retire whole axes so you know where *not* to spend
+a subagent. Run them first:
+
+1. **Docstring `Parameters` names vs. the real signature.** Parse each
+   function with `ast`, collect `posonlyargs + args + kwonlyargs`
+   (plus `vararg`/`kwarg`), and diff against the names parsed out of
+   the numpydoc block. This finds both directions: parameters that were
+   renamed or deleted but are still documented, and real parameters
+   never documented. One pass over a mid-size project found 13,
+   including a documented `cs_res_in` where the argument is
+   `cs_res_out`, and a `dev_dataarray` that is really `dev_series`.
+2. **Every `Default value: X` line vs. the real default.** Pull the
+   default expression from the AST, `literal_eval` it, and compare.
+   A clean result here is worth having explicitly — it means an entire
+   class of "the docs say the default is N" bugs is absent.
+3. **Public functions with arguments and a docstring but no
+   `Parameters` section** — these publish as bare one-liners next to
+   fully-documented siblings. Filter to **module-level** functions
+   (`tree.body`, not `ast.walk`): nested inner helpers are noise and
+   were 21 of 24 hits in one run. Also check the project's own
+   convention before reporting — `main(argv)` with no `Parameters`
+   was the house style in 23 of 27 cases there, so flagging it would
+   have been wrong.
+
+Two cautions. Skip the test directory, or test helpers will dominate
+the output. And when a sweep flags several similar items at once,
+hand-check one before acting on any — see the companion file's step 9
+on parser blind spots.
+
+## 3. Check for content typos, grammar, and factual inconsistencies
 
 Sphinx won't catch prose problems. Delegate a close-reading pass to a
 subagent (cheaper than doing it inline, and it won't inherit your
@@ -80,9 +114,9 @@ closely**, e.g. a page asserting "X is not supported" while another
 page in the same site has a full section documenting X. Always verify
 each finding against the actual file before fixing — see
 [Validating-documentation-against-code.md](Validating-documentation-against-code.md)
-step 8 for why (subagents occasionally shift line numbers or misquote).
+step 9 for why (subagents occasionally shift line numbers or misquote).
 
-## 3. Cross-check docs against the actual codebase for undocumented features
+## 4. Cross-check docs against the actual codebase for undocumented features
 
 When the repo has real source code alongside the docs (not a docs-only
 repo), don't assume the docs are complete just because they build
@@ -110,7 +144,46 @@ Diff each such block line-by-line against the actual script's
 print/`printf` statements (or a fresh real run of the tool) rather than
 trusting that the surrounding prose is still accurate.
 
-## 4. Toctree hygiene: remove/fix stale entries
+Two more classes of verbatim block drift the same silent way, and both
+are mechanically checkable rather than read-by-eye:
+
+- **A dependency/version table in the docs vs. the real manifests.**
+  Parse both sides and diff cell by cell. Reading a 38-row table by eye
+  reliably misses the one cell that says `3.16` where the manifest says
+  `3.1.6`; a script found 4 wrong cells across three columns *and*
+  proved the other 34 rows correct, which a read-through can never
+  establish. Watch for a doc table that carries one "Version" column
+  while the project now ships several environment files — the column
+  silently means "whichever environment I was written against".
+- **A reproduced config/YAML block vs. the real config file.** Diff
+  values, but also ask whether the *excerpt* is still valid in
+  isolation: one block had every value right yet was dedented out of
+  its parent key, so copy-pasting it yielded structurally invalid YAML.
+  And check the block against the output shown beside it — a sample
+  console transcript was impossible for the config printed above it,
+  because a `skip_small_diffs: True` / threshold-`0.0` combination
+  would have suppressed every row displayed.
+
+## 5. Check that procedural steps are executable in the order given
+
+A numbered install/build procedure can have every individual command
+correct and still be wrong *as a sequence*, and neither a build warning
+nor any grep will catch it. In one docs tree the steps were: start the
+`sphinx-autobuild` server, **then** `make clean` — which deletes
+`docs/build`, i.e. removes the output being served — with the sentence
+"this will parse the reST files and generate new HTML" attached to the
+delete step.
+
+So read each numbered procedure as if executing it, and ask what state
+every step leaves behind for the next one. Confirm what a target
+actually *does* rather than trusting the doc's description of it: that
+`Makefile` routed every target to `sphinx-build -M $@`, so `clean`
+generated nothing at all. Also sanity-check that setup steps land where
+the prose says — another page said to `cd gchp/run` after cloning a
+repo that creates `GCHP/`, then passed `.` to a script that needs the
+directory one level deeper.
+
+## 6. Toctree hygiene: remove/fix stale entries
 
 A `.rst` file's own build warnings say nothing about whether it's
 still correctly wired into navigation. Separately:
@@ -125,7 +198,7 @@ still correctly wired into navigation. Separately:
   rebuild in step 1 will surface; remove the toctree entry (or the
   orphaned file, depending on which is stale) rather than leaving it.
 
-## 5. Anonymize inline hyperlinks (`` `_ `` → `` `__ ``)
+## 7. Anonymize inline hyperlinks (`` `_ `` → `` `__ ``)
 
 Convert named inline hyperlinks to anonymous ones to preempt "Duplicate
 explicit target name" warnings:
@@ -160,7 +233,7 @@ for f in glob.glob('**/*.rst', recursive=True):
   the behavior ever seems to contradict what's expected, since docutils
   version drift could change it.)
 
-## 6. Option-group hygiene: default first, right directive for booleans
+## 8. Option-group hygiene: default first, right directive for booleans
 
 Pages that document a set of mutually-exclusive settings (CMake build
 switches, YAML config keys, CLI flags) commonly use Sphinx's
@@ -206,7 +279,7 @@ being meaningful (e.g. a duplicate label makes "which one is the
 default" ambiguous), but otherwise flag-don't-fix content bugs that
 are outside what was asked, the same as any other unrelated finding.
 
-## 7. `:func:`/`:mod:`/`:class:` role consistency (Python autodoc projects)
+## 9. `:func:`/`:mod:`/`:class:` role consistency (Python autodoc projects)
 
 When a project cross-references its own API with Sphinx's Python
 domain roles, it's common for `:func:` to get used as a catch-all for
@@ -244,7 +317,7 @@ wrong one is a real inconsistency worth fixing.
   the confirmed list of dotted names that are modules, do one
   script/pass per exact name (`` :func:`name` `` → `` :mod:`name` ``)
   across every `.rst` file rather than editing occurrence by occurrence
-  — same rationale as the option-group bulk-sed approach in step 6.
+  — same rationale as the option-group bulk-sed approach in step 8.
   Handle the broken-path cases and any `:class:`-not-`:func:` cases
   (e.g. a third-party class like `xarray.DataArray` tagged `:func:`)
   as individual targeted fixes, since each needs a different
