@@ -51,11 +51,11 @@ entirely for a single-file change whose subject line already says everything.
 **CHANGELOG.md.** When the repo keeps one, add an entry and note it in the
 message as `CHANGELOG.md` / `- Updated accordingly`.
 
-**Sign-offs.** End with my `Signed-off-by:` line, plus a `Co-Authored-By:`
-line naming the model when Claude did the work. Both go last, after the
-per-file section. The `geoschem` repos use `Signed-off-by:` consistently; this
-documentation repo often carries `Co-Authored-By:` alone, so match whatever the
-surrounding history does.
+**Sign-offs.** Always end with my `Signed-off-by:` line — every commit, every
+repository, this one included. Add a `Co-Authored-By:` line naming the model
+when Claude did the work. Both go last, after the per-file section, with
+`Signed-off-by:` first. Older commits are inconsistent about this — follow the
+rule, not the log.
 
 ## Worked examples
 
