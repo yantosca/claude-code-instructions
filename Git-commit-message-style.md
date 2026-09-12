@@ -23,7 +23,7 @@ CHANGELOG.md
 - Updated accordingly
 
 Signed-off-by: Bob Yantosca <yantosca@seas.harvard.edu>
-Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
+Co-Authored-By: <model that did the work> <noreply@anthropic.com>
 ```
 
 ## Rules
