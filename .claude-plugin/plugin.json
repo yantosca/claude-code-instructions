@@ -1,0 +1,9 @@
+{
+  "name": "geos-chem-methods",
+  "description": "Reusable working methods for GEOS-Chem, GCHP, and GCPy maintenance: benchmark review, newsletter drafting, publications lookup, Python-version support, OpenMP auditing, and documentation validation",
+  "version": "0.1.0",
+  "author": {
+    "name": "Bob Yantosca",
+    "email": "yantosca@seas.harvard.edu"
+  }
+}

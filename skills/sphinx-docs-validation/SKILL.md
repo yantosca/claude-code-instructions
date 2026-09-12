@@ -1,3 +1,8 @@
+---
+name: sphinx-docs-validation
+description: Audit a Sphinx/reST or ReadTheDocs documentation tree for build warnings, stale toctree entries, role misuse, anonymous-link and option-group hygiene, and factual errors. Use when asked to validate, audit, check, or clean up Sphinx docs, to fix ReadTheDocs build warnings, or to review a docs directory before a release.
+---
+
 # Validating Sphinx/ReadTheDocs documentation
 
 Method for auditing a Sphinx/reST documentation repo (or the `docs/`
@@ -113,7 +118,7 @@ and — importantly — **internal inconsistencies spotted by reading
 closely**, e.g. a page asserting "X is not supported" while another
 page in the same site has a full section documenting X. Always verify
 each finding against the actual file before fixing — see
-[Validating-documentation-against-code.md](Validating-documentation-against-code.md)
+the `docs-vs-code-validation` skill
 step 9 for why (subagents occasionally shift line numbers or misquote).
 
 ## 4. Cross-check docs against the actual codebase for undocumented features
@@ -129,7 +134,7 @@ missing from user guides are a common gap that a docs-only build check
 can't surface. For the fuller method (starting from the changelog,
 telling "missing" apart from "stale/wrong", handling renames, and
 verifying fixes) see
-[Validating-documentation-against-code.md](Validating-documentation-against-code.md).
+the `docs-vs-code-validation` skill.
 
 Pay special attention to **verbatim reproduced console output or
 interactive-menu text** — a sample `cmake` configure transcript, a

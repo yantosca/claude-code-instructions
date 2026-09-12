@@ -1,3 +1,8 @@
+---
+name: geos-chem-benchmark-review
+description: Review a GEOS-Chem Classic or GCHP version-comparison benchmark and trace a difference back to the PR that caused it. Use when asked what changed between two GEOS-Chem or GCHP versions or benchmark runs (e.g. 14.8.0-alpha.19 vs alpha.20), to interpret benchmark difference plots, global mass tables, or gc-dashboard.org artifacts, or to explain why a species mass or concentration shifted between two runs.
+---
+
 # GEOS-Chem Benchmark Results Review (GCClassic and GCHP)
 
 Instructions for reviewing a GEOS-Chem or GCHP version-comparison benchmark

@@ -1,0 +1,21 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "geos-chem-methods",
+  "description": "Working methods for the GEOS-Chem model ecosystem, maintained by the GEOS-Chem Support Team",
+  "owner": {
+    "name": "Bob Yantosca",
+    "email": "yantosca@seas.harvard.edu"
+  },
+  "plugins": [
+    {
+      "name": "geos-chem-methods",
+      "description": "Reusable working methods for GEOS-Chem, GCHP, and GCPy maintenance: benchmark review, newsletter drafting, publications lookup, Python-version support, OpenMP auditing, and documentation validation",
+      "author": {
+        "name": "Bob Yantosca",
+        "email": "yantosca@seas.harvard.edu"
+      },
+      "source": "./",
+      "category": "productivity"
+    }
+  ]
+}

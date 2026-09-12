@@ -1,3 +1,8 @@
+---
+name: gcpy-add-python-version
+description: Add support for a new Python version to GCPy, covering the feasibility dry-run solve, the pinned environment file, docs and CI updates, runtime bugs a solver cannot see, and the downstream conda-forge feedstock. Use when asked to add, support, or test a new Python version (3.15, 3.16, and later) for GCPy, or to update geoschem-gcpy-feedstock for a new interpreter.
+---
+
 # Adding support for a new Python version to GCPy
 
 Method for adding a new Python version (e.g. 3.15, once 3.14 is

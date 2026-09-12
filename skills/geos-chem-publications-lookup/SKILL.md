@@ -1,3 +1,8 @@
+---
+name: geos-chem-publications-lookup
+description: Pull a current list of GEOS-Chem-related publications from the curated Google Scholar profile and resolve DOIs through the Crossref API. Use when asked for new, recent, or year-specific GEOS-Chem papers or publications, or to build a publication list with DOI and Scholar links.
+---
+
 # GEOS-Chem Publications Lookup
 
 Instructions for pulling new GEOS-Chem-related publications on request. This

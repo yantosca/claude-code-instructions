@@ -1,3 +1,8 @@
+---
+name: geos-chem-newsletter-outline
+description: Draft an outline for the next GEOS-Chem newsletter issue. Use when asked to prepare, outline, or draft the GEOS-Chem newsletter, or to summarize what is new since the last issue. Covers fetching the prior issue PDF from Google Drive, diffing the in-development version wiki page, and deduping items against what the last issue already reported.
+---
+
 # GEOS-Chem Newsletter Outline Method
 
 Instructions for drafting an outline for the *next* GEOS-Chem newsletter
@@ -17,7 +22,7 @@ rather than reusing an old outline.
    announcements; follow one level deep into a linked meeting sub-page if
    the homepage references one, but no further afield than that.
 4. **Google Scholar publications lookup** — see
-   [[GEOS-Chem_publications_lookup]] for the documented method.
+   the `geos-chem-publications-lookup` skill for the documented method.
 
 ## Retrieving the Google Drive newsletter PDF
 
@@ -49,7 +54,7 @@ rather than reusing an old outline.
 3. Fetch geoschem.github.io for upcoming meeting announcements; diff
    against what the last newsletter already announced.
 4. Run the publications lookup method (see
-   [[GEOS-Chem_publications_lookup]]) and explicitly cross-check candidate
+   the `geos-chem-publications-lookup` skill) and explicitly cross-check candidate
    papers against the last issue's actual (already-published) list —
    Scholar's "most recent" results can overlap almost completely with
    "already reported" if not deduped against the real prior-issue text.

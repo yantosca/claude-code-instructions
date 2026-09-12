@@ -1,11 +1,16 @@
+---
+name: docs-vs-code-validation
+description: Check whether a project documentation set and its changelog still match what the code actually does, finding undocumented features, stale or wrong prose, and changelog entries naming things that do not exist. Use when asked to verify docs against code, find undocumented features, or audit a CHANGELOG for accuracy. Independent of language and doc toolchain.
+---
+
 # Validating documentation against code and config files
 
 Method for checking whether a project's documentation still matches
 its actual source code and configuration — i.e. finding undocumented
 new features, and doc content that's stale, incomplete, or outright
 wrong relative to what the code currently does. This is a companion to
-[ReadTheDocs-Sphinx-documentation-validation.md](ReadTheDocs-Sphinx-documentation-validation.md)
-(which covers build hygiene) — that file's step 4 is a one-line pointer
+the `sphinx-docs-validation` skill
+(which covers build hygiene) — that skill's step 4 is a one-line pointer
 to this fuller method. Works on any repo with both a docs tree and real
 source/config, independent of language or doc toolchain.
 

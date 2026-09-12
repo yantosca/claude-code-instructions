@@ -1,3 +1,8 @@
+---
+name: openmp-collapse-schedule-audit
+description: Audit a Fortran/OpenMP codebase for OMP DO loops that could take a COLLAPSE(n) clause and for SCHEDULE clauses that do not fit the loop workload, including a data-race check. Use when asked to audit, review, or find OpenMP COLLAPSE or SCHEDULE opportunities, or to check parallel Fortran loops in GEOS-Chem, HEMCO, GCHP, or any Fortran codebase. Reports findings by default rather than editing code.
+---
+
 # OpenMP COLLAPSE/SCHEDULE Audit Method
 
 Instructions for auditing a Fortran/OpenMP codebase to find `!$OMP DO`/
