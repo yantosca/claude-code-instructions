@@ -21,16 +21,20 @@ GEOS-Chem Support Team.
 ## Install
 
 ```bash
-# From a local clone
-/plugin marketplace add ~/repos/claude-code-instructions
-/plugin install geos-chem-methods
-
-# Or straight from GitHub
-/plugin marketplace add <owner>/claude-code-instructions
+/plugin marketplace add yantosca/claude-code-instructions
 /plugin install geos-chem-methods
 ```
 
-Update with `git pull` in the clone (or `/plugin marketplace update`).
+Update with `/plugin marketplace update geos-chem-methods`, which pulls the latest
+`main` from GitHub.
+
+To hack on the skills themselves, add the marketplace from a local clone instead —
+edits then take effect without a push:
+
+```bash
+/plugin marketplace add ~/repos/claude-code-instructions
+/plugin install geos-chem-methods
+```
 
 ## Always-on rules
 
