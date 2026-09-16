@@ -18,6 +18,7 @@ GEOS-Chem Support Team.
 | `openmp-collapse-schedule-audit` | Audit Fortran/OpenMP loops for `COLLAPSE(n)` and `SCHEDULE` fit |
 | `sphinx-docs-validation` | Audit a Sphinx/ReadTheDocs tree for build warnings and hygiene issues |
 | `docs-vs-code-validation` | Check whether docs and CHANGELOG still match what the code does |
+| `claude-md-release-audit` | Re-verify a `CLAUDE.md` against the code after a version release |
 
 ## Install
 

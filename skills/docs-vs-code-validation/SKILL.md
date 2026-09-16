@@ -14,6 +14,11 @@ the `sphinx-docs-validation` skill
 to this fuller method. Works on any repo with both a docs tree and real
 source/config, independent of language or doc toolchain.
 
+For auditing a `CLAUDE.md` or other agent-instruction file rather than a
+docs tree, use the `claude-md-release-audit` skill instead — the target
+is one file, there is no doc build to verify against, and the findings
+are graded by how badly they misdirect an agent.
+
 ## 1. Start from the changelog, not a blank search
 
 Don't try to guess what might be undocumented from scratch. Read the
