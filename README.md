@@ -14,6 +14,7 @@ GEOS-Chem Support Team.
 | `geos-chem-newsletter-outline` | Draft the outline for the next GEOS-Chem newsletter issue |
 | `geos-chem-publications-lookup` | Pull current GEOS-Chem publications from Google Scholar and resolve DOIs via Crossref |
 | `gcpy-add-python-version` | Add a new Python version to GCPy, through to the conda-forge feedstock |
+| `gcpy-feedstock-pr` | Land a PR on the `geoschem-gcpy` conda-forge feedstock and verify it on the channel |
 | `openmp-collapse-schedule-audit` | Audit Fortran/OpenMP loops for `COLLAPSE(n)` and `SCHEDULE` fit |
 | `sphinx-docs-validation` | Audit a Sphinx/ReadTheDocs tree for build warnings and hygiene issues |
 | `docs-vs-code-validation` | Check whether docs and CHANGELOG still match what the code does |

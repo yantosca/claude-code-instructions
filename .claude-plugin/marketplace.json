@@ -9,7 +9,7 @@
   "plugins": [
     {
       "name": "geos-chem-methods",
-      "description": "Reusable working methods for GEOS-Chem, GCHP, and GCPy maintenance: benchmark review, newsletter drafting, publications lookup, Python-version support, OpenMP auditing, and documentation validation",
+      "description": "Reusable working methods for GEOS-Chem, GCHP, and GCPy maintenance: benchmark review, newsletter drafting, publications lookup, Python-version support, conda-forge feedstock maintenance, OpenMP auditing, and documentation validation",
       "author": {
         "name": "Bob Yantosca",
         "email": "yantosca@seas.harvard.edu"

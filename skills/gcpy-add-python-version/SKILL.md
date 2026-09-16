@@ -99,6 +99,11 @@ of:
 
 ## 6. Update the downstream conda-forge feedstock too
 
+The feedstock has its own end-to-end method — branching, build
+numbers, rerendering and channel verification — in the
+`gcpy-feedstock-pr` skill. What follows is only the part
+specific to introducing a new interpreter.
+
 If the package has a conda-forge feedstock (a separate repo, e.g.
 `geoschem-gcpy-feedstock`), the new Python version isn't actually
 installable via `conda install` until the feedstock is updated:
