@@ -31,11 +31,26 @@ skipped and the one that most often changes the plan. The recipe on
 conda search -c conda-forge --override-channels 'geoschem-gcpy=<ver>' --info
 ```
 
-Read the per-variant pins, not just the version list. A build-string hash
-that is *identical* across two package versions means those variants were
-built against the same pinned dependencies; a variant with a *different*
-hash was built against different ones. That is how you spot a matrix that
-was only partially rebuilt.
+Read the per-variant `depends` list, not just the version list, and not
+the build-string hash. **The hash is not evidence of which dependency
+versions a variant was built against** — it derives from the variant
+configuration (python version, numpy pin, target platform), not from exact
+pins written into `meta.yaml`. Two builds of different package versions
+with different `esmf` pins routinely carry the *same* hash: gcpy 1.8.0 and
+1.8.1 were both `py311hee3e6b8_0` despite being built against esmf 8.8.1
+and 8.9.1 respectively. Only the `depends` list tells you what a variant
+actually pinned, and that is how you spot a matrix that was only
+partially rebuilt.
+
+Uploads also lag the channel. After a merge the artifacts appear on
+anaconda.org well before `conda search` or the CDN can see them, so a 404
+or an empty search shortly after a green build means propagation, not
+failure. Check the upload itself:
+
+```bash
+curl -s https://api.anaconda.org/package/conda-forge/geoschem-gcpy/files \
+  | python3 -c "import json,sys;[print(f['attrs'].get('subdir'),f['basename']) for f in json.load(sys.stdin) if f['version']=='<ver>']"
+```
 
 **conda-forge's current global pinning**, which decides the matrix
 regardless of what the recipe says:
