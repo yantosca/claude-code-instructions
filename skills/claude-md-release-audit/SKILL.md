@@ -109,6 +109,19 @@ Also check whether an option is *validated*. An unvalidated `MECH`/`MODE`-style
 string that fails later on a missing target, rather than with a clear error, is
 worth a warning line in `CLAUDE.md`.
 
+**"Declared nowhere" does not mean "no effect".** `-DFOO=y` creates the cache
+variable whether or not anything declares it, and every `if(FOO)` or
+`$<$<BOOL:${FOO}>:...>` in *any* subproject then sees it. So before writing
+"`-DFOO` is a no-op", grep the submodules' CMake too, and check the two ways a
+switch is wired separately: **sources and targets** (does a generator
+expression add a source file or link a library?) and **compile definitions**
+(does anything add `FOO` to a `target_compile_definitions`?). In one audit a
+superproject never declared `APM`, and `CLAUDE.md` called `-DAPM=y` a no-op.
+In fact the submodule's CMake compiled and linked the APM code, while the
+superproject's definitions list omitted `APM`, so 88 `#if APM` blocks stayed
+compiled out. That is a half-wired build, which is worse than a no-op, and the
+two superprojects differed on exactly this point.
+
 Cross-check the switch names against the repo's own test harness if it has one —
 the function that assembles configure flags for the test matrix is usually the
 most reliable list in the tree.
