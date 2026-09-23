@@ -51,6 +51,21 @@ Before believing any claim about what the repo contains or builds:
   to add: "emissions live in HEMCO, photolysis in Cloud-J, aerosol
   thermodynamics in HETP, all separate repos" prevents an agent editing the
   wrong repository, which no amount of in-repo detail will.
+- **Read every superproject, not just the one you have checked out.** The
+  same repo can be vendored at different paths by different wrappers. In one
+  audit `CLAUDE.md` said "both superprojects vendor this repo at
+  `src/GEOS-Chem`"; true for GCClassic, but GCHP nests it at
+  `src/GCHP_GridComp/GEOSChem_GridComp/geos-chem`, and HEMCO one level deeper
+  still (`.../HEMCO/HEMCO`, inside a GCHP-owned wrapper directory whose own
+  `CMakeLists.txt` injects defines the submodule's CMake never sets). For a
+  wrapper that is not on disk, read it with `gh` rather than from memory:
+
+  ```bash
+  gh api repos/<org>/<wrapper>/contents/.gitmodules -H "Accept: application/vnd.github.raw"
+  gh api repos/<org>/<wrapper>/contents/run --jq .target   # resolve a symlink
+  ```
+
+  Where paths differ, a per-superproject table beats a sentence.
 - **Check where a build target comes from.** If the repo links targets it never
   defines, say so — it is the clearest possible evidence for "this cannot be
   configured standalone." Likewise a root `CMakeLists.txt` with no `project()`
@@ -172,6 +187,23 @@ agent should *do*:
 - **`.gitattributes` line-ending policy.** `eol=lf` enforcement means never
   writing CRLF into scripts or source.
 
+When a `.gitattributes` is new, audit what is already committed against it:
+
+```bash
+git ls-files --eol | awk '$1=="i/crlf" || $1=="i/mixed"'
+```
+
+Each hit will show as modified the first time anyone touches it. Decide per
+file: renormalize ordinary source (`git add --renormalize <file>`), but give
+Windows batch files (`*.bat`, e.g. a Sphinx `docs/make.bat`) a
+`text eol=crlf` rule instead, because `cmd.exe` needs CRLF. A blanket
+`eol=lf` silently breaks them on checkout.
+
+Also check claims **about** these files. When `CLAUDE.md` says "`SECURITY.md`
+names X", grep `SECURITY.md` for X. In two sibling repos `CLAUDE.md` quoted a
+threat class that the security policy it cited never stated. The fix can go
+either way, but the quote must hold.
+
 ## 8. Say plainly when there is no CI
 
 An agent that assumes a PR gate exists will wait for one, or will treat "tests
@@ -225,7 +257,18 @@ Two failure modes to check for by name:
   nothing, so a script can report success having changed nothing. In one case
   the `[Unreleased]` heading the script keys on did not exist in one of the two
   changelogs it targets. Confirm each intended edit actually landed rather than
-  trusting the script's own output.
+  trusting the script's own output. Better still, make the script check for
+  itself: after each `sed`, `grep -qx "<expected line>" <file> || exit 1`.
+  Test that on a scratch copy of the touched files, including a case where the
+  pattern is broken, and confirm the script exits nonzero. Also look at how
+  the script matches: a bare `[0-9]+\.[0-9]+\.[0-9]+` applied to every line
+  rewrites any other dotted three-part number that later lands in that file.
+  The fix for a missing `[Unreleased]` heading is to add one, and to tell
+  `CLAUDE.md` to restore it after every release, since the script consumes it.
+- **Version metadata that went stale through a sibling change.** When a
+  release raises a version floor or a date in "all" variants, diff the
+  variants afterward. A mechanism that is a copy of another (`custom` of
+  `fullchem`) is the one most often missed.
 
 ## 11. Re-verify the edited file mechanically
 
@@ -243,6 +286,13 @@ slugs (`org/repo`), superproject-relative paths, and any path you cite
 *precisely because* it is wrong elsewhere. Run the bare-filename half with
 `find -name` to confirm each file is where the text says it is — that is the
 check that catches an off-by-one-directory path, the single most common error.
+
+Count files with `git ls-files`, not `ls | wc -l`. Shell aliases and
+column-formatted `ls` output gave three different counts for one directory in
+a single session. `git ls-files '<dir>/*.F90' | wc -l` counts exactly the
+tracked files the claim is about. Recount any "N modules / N extensions"
+figure this way, and check what the noun counts (files, modules, or
+registered entries).
 
 Finally, confirm the fixed file does not re-introduce an error it inherited.
 A wrong path in `CLAUDE.md` often came from a wrong path in the changelog; fix
