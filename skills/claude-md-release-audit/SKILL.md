@@ -199,6 +199,23 @@ Windows batch files (`*.bat`, e.g. a Sphinx `docs/make.bat`) a
 `text eol=crlf` rule instead, because `cmd.exe` needs CRLF. A blanket
 `eol=lf` silently breaks them on checkout.
 
+An `eol=crlf` rule alone is not the whole fix. `text` means "store LF in the
+index, convert on checkout", and adding the rule does not rewrite a blob that
+was committed with CRLF. The `--eol` listing then shows
+`i/crlf w/crlf attr/text eol=crlf`, a file that will appear modified out of
+nowhere. Renormalize it too (`git add --renormalize docs/make.bat`). The
+listing should change to `i/lf w/crlf`, and the working-tree file stays
+byte-for-byte the same. In one superproject the rule was already present and
+correct, and only the listing showed that the file itself had never been
+converted.
+
+Two more things to remove when you find them. An instruction that says
+"confirm X rather than assume" is a flag: if X has since been decided
+(a target branch, say), state the answer and cite where it is recorded.
+And delete notes about the file's own history ("CLAUDE.md previously described
+only the first"). They cost context in every session and tell the agent nothing
+about the code.
+
 Also check claims **about** these files. When `CLAUDE.md` says "`SECURITY.md`
 names X", grep `SECURITY.md` for X. In two sibling repos `CLAUDE.md` quoted a
 threat class that the security policy it cited never stated. The fix can go
