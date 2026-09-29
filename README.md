@@ -40,10 +40,10 @@ edits then take effect without a push:
 
 ## Always-on rules
 
-`Git-commit-message-style.md` is not a skill — it applies to every commit, so it belongs in
-context permanently rather than waiting on a trigger. Wire it in once per machine:
+`Git-commit-message-style.md` and `Markdown-style.md` are not skills. They apply to every commit and every piece of Markdown, so they belong in context permanently rather than waiting on a trigger. Wire them in once per machine:
 
 ```bash
 mkdir -p ~/.claude
 echo '@~/repos/claude-code-instructions/Git-commit-message-style.md' >> ~/.claude/CLAUDE.md
+echo '@~/repos/claude-code-instructions/Markdown-style.md' >> ~/.claude/CLAUDE.md
 ```

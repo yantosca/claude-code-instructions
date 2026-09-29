@@ -22,6 +22,7 @@ Support Team rather than living in one checkout.
 - `Git-commit-message-style.md` — deliberately **not** a skill. It is an always-on rule, wired
   into `~/.claude/CLAUDE.md` via an `@` import so it is in force for every commit rather than
   waiting on a skill trigger.
+- `Markdown-style.md` — likewise an always-on rule, wired in the same way: never hard-wrap a Markdown paragraph or list item.
 - `CODE_OF_CONDUCT.md`, `SECURITY.md` — repository governance, not instructions to Claude.
 
 ## Adding a new method
@@ -41,3 +42,4 @@ Support Team rather than living in one checkout.
 
 - Keep line endings LF and files plain text (enforced via `.gitattributes`).
 - Commit messages follow `Git-commit-message-style.md`.
+- Markdown follows `Markdown-style.md`.
