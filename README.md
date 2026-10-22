@@ -16,6 +16,7 @@ GEOS-Chem Support Team.
 | `gcpy-add-python-version` | Add a new Python version to GCPy, through to the conda-forge feedstock |
 | `gcpy-feedstock-pr` | Land a PR on the `geoschem-gcpy` conda-forge feedstock and verify it on the channel |
 | `openmp-collapse-schedule-audit` | Audit Fortran/OpenMP loops for `COLLAPSE(n)` and `SCHEDULE` fit |
+| `vtune-hotspot-comparison` | Compare ref vs dev VTune hotspot profiles and attribute timing changes to OpenMP loops |
 | `sphinx-docs-validation` | Audit a Sphinx/ReadTheDocs tree for build warnings and hygiene issues |
 | `docs-vs-code-validation` | Check whether docs and CHANGELOG still match what the code does |
 | `claude-md-release-audit` | Re-verify a `CLAUDE.md` against the code after a version release |
