@@ -9,6 +9,17 @@ Instructions for reviewing a GEOS-Chem or GCHP version-comparison benchmark
 (e.g. "what changed between alpha.19 and alpha.20") and tying the diff
 pattern back to the PR that caused it.
 
+## Step 0: Find out what is in the release
+
+One alpha tag can bundle several PRs. Before attributing a diff, list them from a GEOS-Chem source checkout and attribute the benchmark to the whole set, not just the PR the user names:
+
+```
+git log --oneline <prev-tag>..<tag>     # e.g. 14.9.0-alpha.4..14.9.0-alpha.5
+git diff <prev-tag>..<tag> -- KPP/fullchem/*.eqn KPP/fullchem/fullchem_*.F90
+```
+
+Example: 14.9.0-alpha.5 contained both PR #3409 (HMS rate update) and PR #3430 (which built on it).
+
 ## Entry point
 
 Benchmark runs are indexed at `gc-dashboard.org`:
@@ -44,6 +55,19 @@ FullColumn_ZonalMean, Strat_ZonalMean. Fetch these directly with
 `curl`/Read rather than asking the user to paste contents — the text
 tables run 300-450 lines and the PDFs are a few pages each.
 
+### Listing artifacts without the dashboard
+
+The bucket is publicly listable, which gives exact filenames (table timestamps, GCHP-only or GCC-only tables) without parsing the dashboard page:
+
+```
+curl -s "https://benchmarks-cloud.s3.amazonaws.com/?list-type=2&prefix=diff-plots/1Mon/<primary_key>/BenchmarkResults/" \
+  | grep -o '<Key>[^<]*</Key>' | sed 's/<\/\?Key>//g'
+```
+
+Files are then at `https://benchmarks-cloud.s3.amazonaws.com/<key>`. Results are capped at 1000 keys per listing, so narrow `prefix` to `.../Tables/` if the list looks truncated. Download into a fresh scratch directory.
+
+Useful tables beyond the mass table: `OH_metrics.txt` (global mean OH, MCF and CH4 lifetimes) and `Summary.txt` (which diagnostic collections differ), both present for GCClassic; `Benchmark_Timers_*.txt` and `Diagnostic_Sanity_Check.txt` for both models. Use the mass table at the *end* of the run (`GlobalMass_TropStrat_20190801T00.txt` for a July 1-month benchmark), not the initial one.
+
 ## Step 1: Global mass tables
 
 Start with `GlobalMass_TropStrat_<timestamp>.txt` (Trop+Strat) — it lists
@@ -61,6 +85,19 @@ every species' Ref mass, Dev mass, Dev-Ref, and % diff in one pass.
 4. Report both ends: the largest-magnitude % diffs (what's driving the
    change) and the smallest nonzero ones (confirmation nothing broke for
    inert/well-mixed tracers).
+
+Parsing recipe: rows end in a `*` flag column, so the % diff is field 6, not `$NF`. Rank by magnitude, skipping `nan`:
+
+```
+awk '$2==":" && $6!="nan" {v=$6+0; a=(v<0?-v:v); if(a>0) print a, $0}' GlobalMass_TropStrat_*.txt \
+  | sort -gr | head -25 | cut -d' ' -f2-
+```
+
+Swap `sort -gr` for `sort -g` to see the smallest nonzero diffs. Values around 1e-14 % are round-off and confirm unrelated species (dust, BC) did not move.
+
+Production/loss tracers (`PSO4MP`, `LHMSMP`, `PHMSAQ`, `LHMSAQ`, `PSO4AQ`, ...) are accumulated diagnostic species, not real burdens. A large % change in one is evidence of a flux shifting between pathways, which is often the most direct readout of what a kinetics change did.
+
+**Cross-model check.** When both GCClassic and GCHP benchmarks exist, compare their tables side by side. Matching % diffs (e.g. HMS −24.4% vs −24.3%) and matching spatial patterns confirm a real, model-independent effect. Timer changes are much noisier: a ±10% swing in one model's chemistry timer that the other model does not show is node noise, not a speedup.
 
 ## Step 2: Look for a chemical-family pattern, cross-check the PR
 
@@ -111,7 +148,22 @@ Sahara/Middle East — consistent with OH's O(¹D)+H₂O source being
 humidity-sensitive, and pointing straight at the humidity-timing change
 rather than an emissions or transport bug.
 
+Example: for 14.9.0-alpha.5 (PRs #3409 + #3430, HMS + SO2 oxidation rate now using a constant aqueous OH of 6.3e-15 M), the Sulfur/Surface HMS page showed a decrease everywhere. The absolute drop was largest where the burden is (E. China, India, E. US), but the Dev/Ref ratio bottomed out at ~0.4–0.6 over the Sahara and Middle East, the driest regions. That fingerprint pointed at the new rate being applied with no aerosol-liquid-water or RH gating (and no day/night cycle). Reading the old code also showed the original bug: the old rate used `hydroxide = 10**(pH-14)`, the OH⁻ *ion*, as if it were the OH radical. SO4 rose +1.2% globally, matching the PR's "~1%" expectation, with the usual NH4 up / NIT down / NH3 down ISORROPIA response.
+
+### Finding the right PDF page
+
+Each category PDF has one species per page. Map pages to species before rendering, then render only the pages you need at low resolution:
+
+```
+for p in $(seq 1 $(pdfinfo f.pdf | awk '/Pages/{print $2}')); do
+  echo "p$p: $(pdftotext -f $p -l $p f.pdf - | grep -o 'SpeciesConc[A-Za-z]*_[A-Za-z0-9]*' | sort -u)"
+done
+pdftoppm -f 3 -l 3 -r 60 -png f.pdf out     # -r 60 is enough to read the maps
+```
+
 ## Environment note: rendering PDFs
+
+On Harvard Cannon, `pdftoppm`, `pdftotext`, and `pdfinfo` are already in `/usr/bin`, so the workaround below is only needed on other machines.
 
 Some sandboxes have no `poppler-utils` and no passwordless `sudo`, so the
 PDF-page-rendering step (`pdftoppm`) fails by default. Fix once per
