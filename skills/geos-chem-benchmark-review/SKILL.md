@@ -20,6 +20,14 @@ git diff <prev-tag>..<tag> -- KPP/fullchem/*.eqn KPP/fullchem/fullchem_*.F90
 
 Example: 14.9.0-alpha.5 contained both PR #3409 (HMS rate update) and PR #3430 (which built on it).
 
+Then confirm that both models' tags actually carry that GEOS-Chem commit, so that "the change didn't reach GCHP" is ruled in or out before any physics is invoked:
+
+```
+git rev-parse <tag>^{}                                                                              # GEOS-Chem commit
+gh api "repos/geoschem/GCClassic/contents/src/GEOS-Chem?ref=<tag>" --jq .sha                        # GCClassic submodule pointer
+gh api "repos/geoschem/GCHP/contents/src/GCHP_GridComp/GEOSChem_GridComp/geos-chem?ref=<tag>" --jq .sha   # GCHP submodule pointer
+```
+
 ## Entry point
 
 Benchmark runs are indexed at `gc-dashboard.org`:
@@ -66,7 +74,7 @@ curl -s "https://benchmarks-cloud.s3.amazonaws.com/?list-type=2&prefix=diff-plot
 
 Files are then at `https://benchmarks-cloud.s3.amazonaws.com/<key>`. Results are capped at 1000 keys per listing, so narrow `prefix` to `.../Tables/` if the list looks truncated. Download into a fresh scratch directory.
 
-Useful tables beyond the mass table: `OH_metrics.txt` (global mean OH, MCF and CH4 lifetimes) and `Summary.txt` (which diagnostic collections differ), both present for GCClassic; `Benchmark_Timers_*.txt` and `Diagnostic_Sanity_Check.txt` for both models. Use the mass table at the *end* of the run (`GlobalMass_TropStrat_20190801T00.txt` for a July 1-month benchmark), not the initial one.
+Useful tables beyond the mass table, present for both models (GCClassic also has `Strat_trop_exchange.*.txt`): `OH_metrics.txt` (global mean OH, MCF and CH4 lifetimes), `Summary.txt` (which diagnostic collections differ), `Benchmark_Timers_*.txt`, and `Diagnostic_Sanity_Check.txt`. With the AWS CLI, `aws s3 ls --no-sign-request --recursive s3://benchmarks-cloud/diff-plots/1Mon/<primary_key>/` and `aws s3 cp --no-sign-request <s3-url> -` also work without credentials. Use the mass table at the *end* of the run (`GlobalMass_TropStrat_20190801T00.txt` for a July 1-month benchmark), not the initial one.
 
 ## Step 1: Global mass tables
 
@@ -97,7 +105,11 @@ Swap `sort -gr` for `sort -g` to see the smallest nonzero diffs. Values around 1
 
 Production/loss tracers (`PSO4MP`, `LHMSMP`, `PHMSAQ`, `LHMSAQ`, `PSO4AQ`, ...) are accumulated diagnostic species, not real burdens. A large % change in one is evidence of a flux shifting between pathways, which is often the most direct readout of what a kinetics change did.
 
-**Cross-model check.** When both GCClassic and GCHP benchmarks exist, compare their tables side by side. Matching % diffs (e.g. HMS −24.4% vs −24.3%) and matching spatial patterns confirm a real, model-independent effect. Timer changes are much noisier: a ±10% swing in one model's chemistry timer that the other model does not show is node noise, not a speedup.
+**"Model X didn't change."** If the user reports that one model's benchmark shows no change, check that model's `Summary.txt` and the "N differences" header before explaining anything. A change of a few percent in a handful of species is easy to miss on the dashboard plots. (14.9.0-alpha.9: GCHP was reported unchanged, but its table showed 389 differences against 388 for GCClassic.)
+
+**Troposphere vs stratosphere.** Rank both `GlobalMass_Trop_*` and `GlobalMass_TropStrat_*`. A species that moves a lot in TropStrat but little in Trop is changing in the stratosphere. This is the quickest way to place a change before opening any `Strat_ZonalMean` PDF.
+
+**Cross-model check.** When both GCClassic and GCHP benchmarks exist, compare their tables side by side. Matching % diffs (e.g. HMS −24.4% vs −24.3%) and matching spatial patterns confirm a real, model-independent effect. This applies to pure rate or kinetics changes. A change whose effect depends on carried-over state (fields read from the restart, tropopause history, values left in boxes that a routine skips) can legitimately differ by about 2x between GCClassic 4x5 and GCHP C24, because the two restarts and grids hold different amounts of that state. There, the test is the same sign and species pattern, not equal magnitudes. Timer changes are much noisier: a ±10% swing in one model's chemistry timer that the other model does not show is node noise, not a speedup.
 
 ## Step 2: Look for a chemical-family pattern, cross-check the PR
 
@@ -117,6 +129,9 @@ in the largest movers:
 - A PR noting "no diff for GEOS-Chem Classic, diffs for GCHP only" points
   at GCHP-specific meteorology plumbing (`Interfaces/GCHP/`), not shared
   chemistry code.
+- Stratospheric chlorine partitioning (ClNO3 up, HOCl/OClO/ClO down, SALACL up), concentrated in the TropStrat table and not the Trop table → a change to stratospheric heterogeneous chemistry or the aerosol surface area/water that feeds it.
+
+Example: 14.9.0-alpha.9 (PR #3442 only; `State_Chm%AeroH2O` reset to zero in strat/meso boxes where HETP is skipped, instead of keeping a stale value from the restart or from when the box was tropospheric). The PR predicted slower ClNO3 + H2O on stratospheric aerosol. GCClassic showed SALACL +7.8%, OClO −5.3%, HOCl −3.5%, ClNO3 +1.6%, OH −0.10%. GCHP showed the same pattern at about half the size: +3.8%, −2.2%, −1.8%, +0.56%, −0.023%. StateMet was identical in both. Both models read `AeroH2O_SNA` from the restart (GCClassic through HEMCO in `hco_utilities_gc_mod.F90`, GCHP through the internal state in `Chem_GridCompMod.F90`), so the size of the effect depends on how much stale water each restart carried. The magnitude gap is not a precision issue.
 
 ## Step 3: Read the plot PDFs — the significant differences are the key
 
